@@ -1,0 +1,250 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+    <meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+	<meta http-equiv="Content-Security-Policy" content="default-src * data: gap: https://ssl.gstatic.com; style-src * 'unsafe-inline'; script-src * 'unsafe-inline' 'unsafe-eval'">
+	<script src="components/loader.js"></script>
+	<script src="lib/onsenui/js/onsenui.min.js"></script>
+
+	<link rel="stylesheet" href="components/loader.css">
+	<link rel="stylesheet" href="lib/onsenui/css/onsenui.css">
+	<link rel="stylesheet" href="lib/onsenui/css/onsen-css-components.css">
+	<link rel="stylesheet" href="css/style.css">
+	<style>
+		canvas{
+			width: 100%;
+		}
+		.main-btn{
+			border-radius: 4em;
+			padding: 1.8em;
+			font-size: x-large;
+		}
+		ons-button{
+			background: rgba(255, 30, 30, .8)!important;
+		}
+		ons-icon{
+			font-size: 2em!important;
+			height: 1em;
+		}
+		.page__background{
+			background-image:  url("image/parts/bg.jpg");
+			background-repeat: repeat;
+			background-position: center;
+		}
+	</style>
+	<script src="js/jquery-3.3.1.min.js"></script>
+	<script src="js/jq_dbl.js"></script>
+	<script src="js/b64utils.js"></script>
+	<script src="js/saveImage.js"></script>
+	<script src="js/loadImage.js"></script>
+	<script src="js/fukuwarai.js"></script>
+	<script src="js/roulette.js"></script>
+	<!--<script src="js/imageSave.js"></script>-->
+	<script>
+        document.addEventListener("deviceready", onDeviceReady, false);
+        function onDeviceReady() {
+            console.log(device.cordova);
+        }
+
+        // アプリが起動されたと同時にデバイスの横・縦幅を取得する関数（確認用）
+        $(function(){
+            var deviceWidth = screen.width;
+            var deviceHeight = screen.height;
+
+            console.log("デバイスの横幅：" + deviceWidth);
+            console.log("デバイスの縦幅：" + deviceHeight);
+        });
+
+        $.ajaxSetup({ cache: false });
+        var img = [];//元画像配列
+        var rou = [];//ルーレット画像配列
+        var fuk = [];//福笑い画像配列
+        /********
+         *ページ*
+         ********/
+        document.addEventListener('init', function(event) {
+            var page = event.target;
+
+            if (page.id === ('first-page')) {
+                //検証用・本番では必ず削除
+                //document.querySelector('#navigator').pushPage('page2.html');
+            }else if(page.id === "second-page") {
+                // tab2.htmlに対するDOM操作
+                document.getElementById("picture").src = page.data.img;
+                // page.querySelector('#pop-button').onclick = function() {
+                //     document.querySelector('#navigator').popPage();
+                // }
+            }else if(page.id === "third-page"){
+                canvas_fukuwarai(fuk);
+                // page.querySelector('#pop-button').onclick = function() {
+                //     document.querySelector('#navigator').popPage();
+                // }
+            }else if(page.id === "fourth-page"){
+                canvas_roulette(rou);
+                // page.querySelector('#pop-button').onclick = function() {
+                //     document.querySelector('#navigator').popPage();
+                // }
+            }
+
+        });
+        /********
+         * 写真 *
+         ********/
+        function snapPicture () {//カメラ撮影
+            navigator.camera.getPicture (onSuccess, onFail,
+                { quality: 5, destinationType: Camera.DestinationType.DATA_URL});
+            //A callback function when snapping picture is success.
+            function onSuccess (imageData) {
+                document.querySelector('#navigator').pushPage('page2.html',{data:{img:"data:image/jpeg;base64,"+imageData}});
+                img.push(imageData);
+                console.log(img.length);
+            }
+
+            //A callback function when snapping picture is fail.
+            function onFail (message) {
+                alert ('Error occured: ' + message);
+            }
+        }
+        function getPhoto () {//カメラロール        
+            navigator.camera.getPicture(onSuccess, onFail, { quality: 5,destinationType: Camera.DestinationType.DATA_URL,
+                sourceType: navigator.camera.PictureSourceType.SAVEDPHOTOALBUM });
+            function onSuccess (imageData) {
+                document.querySelector('#navigator').pushPage('page2.html',{data:{img:"data:image/jpeg;base64,"+imageData}});
+
+                img.push(imageData);
+                //console.log(img.length);
+            }
+            function onFail (message) {
+                alert('An error Occured: ' + message);
+            }
+        }
+
+
+        function Fukuwarai () {
+            var Fupload = F_upload('fukuwarai',img);
+            $.when(Fupload).done(function(res){
+                fuk = JSON.parse(res)['data'];
+                document.querySelector('#navigator').pushPage('page3.html');
+            });
+        }
+
+        function Roulette () {
+            var Fupload = F_upload('roulette',img);
+            $.when(Fupload).done(function(res){
+                rou = res;
+                document.querySelector('#navigator').pushPage('page4.html');
+            });
+        }
+
+        function F_upload(method,image){
+            var defer = new $.Deferred();
+            //console.log(image);
+            $.ajax({
+                 url:'https://fukuwarai-app.herokuapp.com/image',//TODO::かく
+                //url:'http://192.168.0.10/image',
+                type:'post',
+                data: JSON.stringify({
+                    image : String( image ),
+                    method: method
+                }),
+                contentType: 'application/json',
+                dataType : 'text',
+                beforeSend:function(){
+                    $('div.loading').addClass("onload");
+                },
+                success:function(data){
+                    $('div.loading').removeClass("onload");
+                },
+                error : function(XMLHttpRequest, textStatus, errorThrown, data) {
+                    $('div.loading').removeClass("onload");
+                    alert (XMLHttpRequest.status + ' ' + textStatus);
+                    // サーバーにアクセスできているか確認
+                    console.log("XMLHttpRequest : " + XMLHttpRequest.status);
+                    console.log("textStatus : " + textStatus);
+                    console.log("errorThrown : " + errorThrown.message);
+                }
+            })
+                .done(function(data){
+                    switch(method){
+                        case 'fukuwarai':
+                            fuk.push(data);
+                            break;
+                        case 'roulette':
+                            rou.push(data);
+                            break;
+                        default:
+                            break;
+                    }
+                    defer.resolve(data);
+                })
+                .fail(function(){
+                    console.log('エラー');
+                });
+            return defer.promise(this);
+        }
+        console.log("OS：" + navigator.platform);
+	</script>
+</head>
+<body>
+<ons-navigator var="navi" id="navigator" page="page1.html"></ons-navigator>
+
+<ons-template id="page1.html">
+	<ons-page id="first-page">
+		<div class="content" style="text-align: center">
+			<h1><img src="image/logo/text.png" alt="Fukuwarai" style="width:100%;padding:1em 0" /></h1>
+			<div><img src="image/logo/logo.png" alt="okame"  style="width:40%;padding-bottom:3em" /></div>
+			<ons-button id="to-cam" onclick="snapPicture()" class="main-btn"><ons-icon icon="fa-camera"></ons-icon></ons-button>
+			<ons-button id="to-lib" onclick="getPhoto()" class="main-btn"><ons-icon icon="fa-picture-o"></ons-icon></ons-button>
+		</div>
+	</ons-page>
+</ons-template>
+
+<ons-template id="page2.html">
+	<ons-page id="second-page">
+		<div class="loading">
+			<img src="image/logo/logo.png" alt="">
+		</div>
+		<div class="content" style="text-align: center">
+			<div id="imgarea">
+				<img id="picture" src="" style="width:100%" />
+			</div>
+			<!--<ons-button id="pop-button">やり直す</ons-button>-->
+			<!--<br /><br />-->
+			<ons-button id="to-fuk" onclick="Fukuwarai()"><img src="image/logo/fukuwarai.png" alt="fukuwarai" style="height:4em" /><br />福笑い</ons-button>
+			<!--<ons-button id="to-rou" onclick="Roulette()"><img src="image/logo/roulette.png" alt="roulette" style="height:4em" /><br />ルーレット</ons-button>-->
+			<!--<br /><br />-->
+			<!--<ons-button id="to-cam" onclick="snapPicture()" class="main-btn"><ons-icon icon="fa-camera"></ons-icon></ons-button>-->
+			<!--<ons-button id="to-lib" onclick="getPhoto()" class="main-btn"><ons-icon icon="fa-picture-o"></ons-icon></ons-button>-->
+		</div>
+	</ons-page>
+</ons-template>
+
+<ons-template id="page3.html">
+	<ons-page id="third-page" style="text-align: center">
+		<canvas id="fukuCanvas" height="400" width="450"></canvas>
+		<!--<ons-button id="confirm" onclick="onDeviceReady();">保存する</ons-button>-->
+		<!--<ons-button id="save_fukuwarai" onclick="saveImage();">保存する</ons-button>-->
+		<!--<ons-button id="display" onclick="loadImage();">表示する</ons-button>-->
+		<!--<ons-button id="pop-button">やり直す</ons-button>-->
+	</ons-page>
+</ons-template>
+<ons-template id="page4.html">
+	<ons-page id="fourth-page">
+		<div class="content" style="text-align: center">
+			<ons-button id="start">スタート！</ons-button>
+			<div id="canvases">
+				<canvas id="top" width="400" height="50"></canvas>
+				<canvas id="middle" width="400" height="50"></canvas>
+				<canvas id="bottom" width="400" height="50"></canvas>
+				<ons-button id="top_stop">ストップ01</ons-button>
+				<ons-button id="middle_stop">ストップ02</ons-button>
+				<ons-button id="bottom_stop">ストップ03</ons-button>
+			</div>
+			<br />
+			<ons-button id="pop-button">やり直す</ons-button>
+		</div>
+	</ons-page>
+</ons-template>
+</body>
+</html>

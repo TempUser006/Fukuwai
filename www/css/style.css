@@ -1,0 +1,65 @@
+
+div.loading {
+    background: rgba(5,5,5,.8);
+    visibility: hidden;
+    width: 100%;
+    height: 100%;
+}
+div.loading.onload {
+    position: relative;
+    visibility: visible;
+    background: rgba(5,5,5,.8);
+    width: 100%;
+    height: 100%;
+}
+
+
+div.loading>img {
+    width: 30%;
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    top: 0;
+    margin: auto;
+    display: none;
+}
+
+div.loading.onload>img {
+    animation: bounds 1.8s ease-in 1.8s infinite;
+    display: block;
+}
+
+@keyframes bounds {
+    0% {
+        transform: translateY(0)
+    }
+
+    10% {
+        transform: translateY(-10px)
+    }
+
+    20% {
+        transform: translateY(0)
+    }
+
+    30% {
+        transform: translateY(-5px)
+    }
+
+    40% {
+        transform: translateY(0)
+    }
+
+    60% {
+        transform: rotateZ(0deg)
+    }
+
+    90% {
+        transform: rotateZ(360deg)
+    }
+
+    100% {
+        transform: translateY(0)
+    }
+}
